@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import InputBox from "../components/InputBox";
-import Button from "../components/Button";
 import * as Yup from "yup";
 import { Form, Formik } from "formik";
-import InvalidIcon from "../assets/icons/InvalidIcon";
+
+import InputBox from "../components/InputBox";
+import Button from "../components/Button";
 import ErrorMessage from "../components/ErrorMessage";
+import useAuthentication from "../hooks/useAuthentication";
+import Spinner from "../components/Spinner";
 
 const loginFormSchema = Yup.object().shape({
   email: Yup.string()
@@ -13,10 +15,9 @@ const loginFormSchema = Yup.object().shape({
   password: Yup.string()
     .required("Password field is required.")
     .min(8, "Password must be minimun 8 characters.")
-    .matches(
-      /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/,
-      { message: "Password not strong enough" }
-    ),
+    .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/, {
+      message: "Password not strong enough",
+    }),
 });
 
 const signUpFormSchema = loginFormSchema.concat(
@@ -27,6 +28,8 @@ const signUpFormSchema = loginFormSchema.concat(
 
 const Login = () => {
   const [isLoginEnabled, setIsLoginEnabled] = useState(true);
+  const { isLoading, error, resetError, handleLogin, handleSignUp } =
+    useAuthentication();
 
   const toggleIsLoginEnabled = () => {
     setIsLoginEnabled(!isLoginEnabled);
@@ -36,6 +39,24 @@ const Login = () => {
     let initialForm = { email: "", password: "" };
     if (!isLoginEnabled) initialForm = { ...initialForm, fullName: "" };
     return initialForm;
+  };
+
+  const handleFormSubmit = (values, resetForm) => {
+    if (isLoginEnabled) {
+      handleLogin(values.email, values.password, resetForm);
+    } else {
+      handleSignUp(values.email, values.password, values.fullName, resetForm);
+    }
+  };
+
+  const firebaseErrorMessage = () => {
+    if (error.code === "auth/invalid-credential") {
+      return "Please check your credentials.";
+    } else if (error.code === "auth/email-already-in-use") {
+      return "Email already exists.";
+    } else {
+      return "Something went wrong.";
+    }
   };
 
   return (
@@ -51,13 +72,14 @@ const Login = () => {
           <h1 className="font-bold text-4xl text-white mb-4">
             {isLoginEnabled ? "Sign In" : "Sign Up"}
           </h1>
-
           <Formik
             initialValues={setInitialFormValue()}
             validationSchema={
               isLoginEnabled ? loginFormSchema : signUpFormSchema
             }
-            onSubmit={(values) => console.log(values)}
+            onSubmit={(values, actions) => {
+              handleFormSubmit(values, actions.resetForm);
+            }}
           >
             {({ errors, touched, handleReset }) => (
               <Form className="flex flex-col">
@@ -65,13 +87,13 @@ const Login = () => {
                   <>
                     <InputBox name="fullName" placeholder="Full Name" />
                     {touched.fullName && errors.fullName && (
-                      <ErrorMessage>{errors.fullName}</ErrorMessage>
+                      <ErrorMessage showIcon>{errors.fullName}</ErrorMessage>
                     )}
                   </>
                 )}
                 <InputBox type="email" name="email" placeholder="Email" />
                 {touched.email && errors.email && (
-                  <ErrorMessage>{errors.email}</ErrorMessage>
+                  <ErrorMessage showIcon>{errors.email}</ErrorMessage>
                 )}
                 <InputBox
                   type="password"
@@ -79,10 +101,21 @@ const Login = () => {
                   placeholder="Password"
                 />
                 {touched.password && errors.password && (
-                  <ErrorMessage>{errors.password}</ErrorMessage>
+                  <ErrorMessage showIcon>{errors.password}</ErrorMessage>
                 )}
-                <Button type="submit">
-                  {isLoginEnabled ? "Sign In" : "Sign Up"}
+                {error && <ErrorMessage>{firebaseErrorMessage()}</ErrorMessage>}
+                <Button
+                  className="flex justify-center"
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Spinner />
+                  ) : isLoginEnabled ? (
+                    "Sign In"
+                  ) : (
+                    "Sign Up"
+                  )}
                 </Button>
 
                 <p className="text-white mt-4">
@@ -91,6 +124,7 @@ const Login = () => {
                     className="font-bold cursor-pointer"
                     onClick={() => {
                       handleReset();
+                      resetError();
                       toggleIsLoginEnabled();
                     }}
                   >
