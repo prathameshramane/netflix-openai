@@ -1,9 +1,14 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import Button from "../../components/Button";
 import openai from "../../utils/openai.config";
+import { useDispatch } from "react-redux";
+import { addGptResults } from "../../store/gptSlice";
 
 const GptSearchBar = () => {
   const searchBox = useRef();
+  const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSearch = () => {
     const query = searchBox.current.value;
     const prompt =
@@ -14,6 +19,7 @@ const GptSearchBar = () => {
   };
 
   const fetchOpenAiReponse = async (prompt) => {
+    setIsLoading(true);
     const result = await openai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "gpt-3.5-turbo",
@@ -21,9 +27,8 @@ const GptSearchBar = () => {
     const moviesArray = result.choices[0].message.content
       .split(",")
       .map((movie) => movie.trim());
-    console.log("OPENAI: ", moviesArray);
-    
-    // TODO: Store in Redux and Fetch movies using TMDB
+    dispatch(addGptResults(moviesArray));
+    setIsLoading(false);
   };
 
   return (
@@ -38,7 +43,9 @@ const GptSearchBar = () => {
           placeholder="What do you wish to watch today?"
           type="text"
         />
-        <Button onClick={handleSearch}>Search</Button>
+        <Button onClick={handleSearch} disabled={isLoading}>
+          Search
+        </Button>
       </form>
     </div>
   );

@@ -1,8 +1,7 @@
 const MovieList = ({ title, movies }) => {
-  console.log("Movie List: ", movies);
   return (
     movies && (
-      <div className="px-14 py-8 relative z-20">
+      <div className="px-32 py-8 relative z-20">
         <h1 className="text-white font-semibold text-2xl pb-2">{title}</h1>
         <div className="flex overflow-x-scroll gap-3 no-scrollbar">
           {movies.map((movie) => (
