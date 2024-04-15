@@ -13,7 +13,7 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         dispatch(
           loginUser({
@@ -28,10 +28,11 @@ function App() {
         navigate("/");
       }
     });
+    return () => unsubscribe();
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-slate-900">
       <Header />
       <div className="grow">
         <Outlet />

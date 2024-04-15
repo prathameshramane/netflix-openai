@@ -7,7 +7,7 @@ const Header = () => {
   const { handleLogout } = useAuthentication();
 
   return (
-    <div>
+    <div className="z-20">
       <div className="flex justify-between bg-gradient-to-b from-black py-8 px-32">
         <img className="w-48" src={"/Netflix_2015_logo.svg"} />
         {user && (
